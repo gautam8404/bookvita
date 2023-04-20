@@ -1,0 +1,17 @@
+venv
+__pycache__/
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+media/
+static/
+node_modules/
+.env
+db.sqlite3
+.idea
+book_ids.json
+populate.py
