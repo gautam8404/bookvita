@@ -3,6 +3,7 @@ from django.db import models
 from users.models import User
 from books.models import Book
 from reviews.models import Review
+import uuid
 
 # Create your models here.
 
@@ -24,7 +25,7 @@ class Track(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tracks")
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="tracks")
-    track_id = models.AutoField(primary_key=True)
+    track_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     user_rating = models.FloatField(null=True, blank=True, validators=[MinValueValidator(-1), MaxValueValidator(10)],
                                     default=-1)

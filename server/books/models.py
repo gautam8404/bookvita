@@ -26,6 +26,7 @@ class Book(models.Model):
 
     rating_count = models.IntegerField(default=0, null=True, blank=True)
     average_rating = models.FloatField(default=0.0, null=True, blank=True)
+    book_ol_rating = models.FloatField(default=0.0, null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -47,3 +48,29 @@ class Author(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class BookLikes(models.Model):
+    class Meta:
+        db_table = 'book_likes'
+
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class Rating(models.Model):
+    """
+    Rating model
+
+    rating models will be populated by open library's rating dump and will only be used to fetch ratings as long as a
+    application don't have enough ratings to calculate its own rating.
+    """
+
+    class Meta:
+        db_table = 'rating'
+
+    book_id = models.CharField(max_length=100, primary_key=True)
+    rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(10)])

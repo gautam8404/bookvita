@@ -1,11 +1,12 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+from rest_framework import filters, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .helpers import get_book, get_trending, get_subject
-from .serializers import BookSerializer, BookOLSerializer
-from .models import Book
+from .helpers import get_book, get_trending, get_subject, get_search
+from .serializers import BookSerializer, BookOLSerializer, BookLessSerializer
+from .models import Book, BookLikes
 from rest_framework import generics
 
 
@@ -26,18 +27,23 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'book_id'
     http_method_names = ['get', 'put', 'delete']
 
-    # def get_queryset(self):
-    #     return Book.objects.filter(book_id=self.kwargs.get('book_id'))
+    def get_queryset(self):
+        return Book.objects.filter(book_id=self.kwargs.get('book_id'))
 
     def retrieve(self, request, *args, **kwargs):
-        if Book.objects.filter(book_id=kwargs.get('book_id')).exists():
+        if isinstance(self.get_serializer(), BookSerializer):
             return super().retrieve(request, *args, **kwargs)
         else:
-            print('not in db')
             book = get_book(kwargs.get('book_id'))
-            print(book)
-            serializer = BookOLSerializer(book)
-            return Response(serializer.data)
+            serializer = self.get_serializer(book)
+            res = serializer.data
+            return Response(res)
+
+    def get_serializer_class(self):
+        if Book.objects.filter(book_id=self.kwargs.get('book_id')).exists():
+            return BookSerializer
+        else:
+            return BookOLSerializer
 
 
 class BookOLTrending(APIView):
@@ -64,3 +70,51 @@ class BookOLSubject(APIView):
         serializer = BookOLSerializer(books['results'], many=True)
         books['results'] = serializer.data
         return Response(books)
+
+
+class BookOLSearch(APIView):
+    http_method_names = ['get']
+
+    def get(self, request, *args, **kwargs):
+        query = self.request.query_params.get('q')
+        limit = int(self.request.query_params.get('limit', 0))
+        offset = int(self.request.query_params.get('offset', 0))
+        books = get_search(query, limit, offset)
+        serializer = BookOLSerializer(books['results'], many=True)
+        books['results'] = serializer.data
+        return Response(books)
+
+
+class ToggleBookLikesView(APIView):
+    http_method_names = ['post']
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        book_id = self.kwargs.get('book_id')
+        user = request.user
+        if Book.objects.filter(book_id=book_id).exists():
+            book = Book.objects.get(book_id=book_id)
+            if BookLikes.objects.filter(book=book, user=user).exists():
+                BookLikes.objects.filter(book=book, user=user).delete()
+                return Response({'message': 'Book removed from likes'})
+            else:
+                BookLikes.objects.create(book=book, user=user)
+                return Response({'message': 'Book added to likes'})
+        else:
+            return Response({'message': 'Book not found'})
+
+
+class UserLikesView(APIView):
+    http_method_names = ['get']
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        books = BookLikes.objects.filter(user=user)
+        bks = []
+        for book in books:
+            bks.append(book.book)
+        serializer = BookLessSerializer(bks, many=True)
+        return Response(serializer.data)

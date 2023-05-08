@@ -25,6 +25,7 @@ from .models import Review, ReviewLikes
 class ReviewFilter(django_filters.FilterSet):
     book = django_filters.CharFilter(lookup_expr='exact')
     user = django_filters.CharFilter(field_name='user__username', lookup_expr='exact')
+    like = django_filters.BooleanFilter(field_name='likes', lookup_expr='isnull', exclude=True)
 
     # user_filter = UserFilter
 
@@ -44,8 +45,6 @@ class ReviewFilter(django_filters.FilterSet):
         ),
     )
 
-
-
     # def filter_user(self, queryset, name, value):
     #     return queryset.filter(user__username=value)
 
@@ -58,7 +57,7 @@ class ReviewListView(generics.ListAPIView):
     filterset_class = ReviewFilter
     # ordering_fields = ['likes']
     http_method_names = ['get']
-    # ordering = ['-likes']
+    ordering = ['-likes']
 
 
 class ReviewCreateView(generics.CreateAPIView):

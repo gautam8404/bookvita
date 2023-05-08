@@ -23,7 +23,7 @@ class TrackSerializer(serializers.ModelSerializer):
             if serializer.is_valid():
                 book = serializer.save()
             else:
-                raise serializers.ValidationError({'code': 'book_does_not_exist', 'message': 'Book does not exist.'})
+                raise serializers.ValidationError({'code': 'invalid_book_id', 'message': 'Book does not exist.'})
         return book
 
     def validate_track(self, user, book):

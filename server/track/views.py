@@ -18,7 +18,7 @@ class TrackView(generics.ListCreateAPIView):
     queryset = Track.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['book__book_id', 'favorite', 'status']
-    search_fields = ['book__title', 'book__author']
+    # search_fields = ['book__title', 'book__author']
     ordering_fields = ['book__title', 'book__author', 'book__published_date', 'date_added', 'user_rating']
 
     def get_queryset(self):

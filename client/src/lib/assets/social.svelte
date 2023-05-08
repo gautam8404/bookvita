@@ -1,40 +1,64 @@
 <script lang="ts">
-    import {page } from '$app/stores';
-    export let path = "";
-    export let default_stroke_color = "#000000";
-    export let active_stroke_color = "#FE7410";
-    export let classes = "";
+	import { page } from '$app/stores';
+	export let path = '';
+	export let default_stroke_color = '#000000';
+	export let active_stroke_color = '#FE7410';
+	export let classes = '';
 
-    let svgElement: SVGSVGElement ;
+	let svgElement: SVGSVGElement;
 
-    let active_page: string;
+	let active_page: string;
 
-    page.subscribe(value => {
-        active_page = value.url.pathname;
-    });
+	page.subscribe((value) => {
+		active_page = value.url.pathname;
+	});
 
-    const setStrokeColor = (stroke_color: string) => {
-        svgElement.setAttribute("class", classes);
-        svgElement.innerHTML = svgElement.innerHTML.replace(/stroke=".*?"/g, `stroke="${stroke_color}"`);
-    }
+	const setStrokeColor = (stroke_color: string) => {
+		svgElement.setAttribute('class', classes);
+		svgElement.innerHTML = svgElement.innerHTML.replace(
+			/stroke=".*?"/g,
+			`stroke="${stroke_color}"`
+		);
+	};
 
-
-
-    $: {
-        if (svgElement){
-            if (active_page === path) {
-                setStrokeColor(active_stroke_color);
-            }
-            else {
-                setStrokeColor(default_stroke_color);
-            }
-        }
-    }
-
+	$: {
+		if (svgElement) {
+			if (active_page === path) {
+				setStrokeColor(active_stroke_color);
+			} else {
+				setStrokeColor(default_stroke_color);
+			}
+		}
+	}
 </script>
 
-<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" bind:this={svgElement}>
-<path d="M11.6457 15.559C13.776 15.559 15.5029 13.8321 15.5029 11.7019C15.5029 9.57161 13.776 7.84471 11.6457 7.84471C9.51548 7.84471 7.78857 9.57161 7.78857 11.7019C7.78857 13.8321 9.51548 15.559 11.6457 15.559Z" stroke="black" stroke-width="1.71429" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M18.5029 23.2733C17.8539 22.0141 16.8707 20.9579 15.6611 20.2205C14.4516 19.4832 13.0623 19.0931 11.6457 19.0931C10.2291 19.0931 8.83986 19.4832 7.6303 20.2205C6.42073 20.9579 5.43755 22.0141 4.78857 23.2733" stroke="black" stroke-width="1.71429" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M20.2171 18.2333C21.4337 16.6466 22.1819 14.7511 22.3773 12.7612C22.5727 10.7714 22.2074 8.76657 21.3227 6.97353C20.438 5.18049 19.0693 3.67077 17.3712 2.61512C15.6732 1.55946 13.7137 1 11.7143 1C9.71488 1 7.75536 1.55946 6.05734 2.61512C4.35933 3.67077 2.99058 5.18049 2.1059 6.97353C1.22122 8.76657 0.855907 10.7714 1.05128 12.7612C1.24665 14.7511 1.99491 16.6466 3.21143 18.2333" stroke="black" stroke-width="1.71429" stroke-linecap="round" stroke-linejoin="round"/>
+<svg
+	width="24"
+	height="25"
+	viewBox="0 0 24 25"
+	fill="none"
+	xmlns="http://www.w3.org/2000/svg"
+	bind:this={svgElement}
+>
+	<path
+		d="M11.6457 15.559C13.776 15.559 15.5029 13.8321 15.5029 11.7019C15.5029 9.57161 13.776 7.84471 11.6457 7.84471C9.51548 7.84471 7.78857 9.57161 7.78857 11.7019C7.78857 13.8321 9.51548 15.559 11.6457 15.559Z"
+		stroke="black"
+		stroke-width="1.71429"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<path
+		d="M18.5029 23.2733C17.8539 22.0141 16.8707 20.9579 15.6611 20.2205C14.4516 19.4832 13.0623 19.0931 11.6457 19.0931C10.2291 19.0931 8.83986 19.4832 7.6303 20.2205C6.42073 20.9579 5.43755 22.0141 4.78857 23.2733"
+		stroke="black"
+		stroke-width="1.71429"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<path
+		d="M20.2171 18.2333C21.4337 16.6466 22.1819 14.7511 22.3773 12.7612C22.5727 10.7714 22.2074 8.76657 21.3227 6.97353C20.438 5.18049 19.0693 3.67077 17.3712 2.61512C15.6732 1.55946 13.7137 1 11.7143 1C9.71488 1 7.75536 1.55946 6.05734 2.61512C4.35933 3.67077 2.99058 5.18049 2.1059 6.97353C1.22122 8.76657 0.855907 10.7714 1.05128 12.7612C1.24665 14.7511 1.99491 16.6466 3.21143 18.2333"
+		stroke="black"
+		stroke-width="1.71429"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
 </svg>

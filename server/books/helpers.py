@@ -4,12 +4,14 @@ import requests
 from django.core.cache import cache
 from rest_framework.serializers import ValidationError
 
-from .models import Book, Author
+from .models import Book, Author, Rating
 
 ol_book_url = "https://openlibrary.org/books/{book_id}.json"
 ol_author_url = "https://openlibrary.org/authors/{author_id}"
 ol_trending_url = "https://openlibrary.org/trending/{time}.json?limit={limit}&page={page}"
 ol_subjects_url = "https://openlibrary.org/subjects/{subject}.json?limit={limit}&offset={offset}"
+ol_search_url = "https://openlibrary.org/search.json?q={q}&fields=key,title,first_publish_year,author_key,author_name,\
+                cover_i,cover_edition_key&limit={limit}&offset={offset}"
 
 
 async def fetch(session, url):
@@ -25,10 +27,10 @@ async def fetch_all(urls):
         return await asyncio.gather(*tasks)
 
 
-def get_trending(time="daily", limit=10, page=1):
+def get_trending(time="monthly", limit=10, page=1):
     valid_times = ["now", "daily", "weekly", "monthly", "yearly", "all"]
     if time not in valid_times:
-        time = "daily"
+        time = "monthly"
     if limit > 100:
         limit = 100
     if limit == 0 or limit is None:
@@ -36,12 +38,12 @@ def get_trending(time="daily", limit=10, page=1):
     if page == 0 or page is None:
         page = 1
 
-    cache_key = "trending_{}".format(time, page)
+    cache_key = "trending_{}_{}".format(time, page)
     cached = cache.get(cache_key)
     if cached:
-        if limit <= len(cached):
-            return {"count": limit, "results": cached[:limit]}
-
+        if limit <= cached['limit']:
+            cached['results'] = cached['results'][:limit]
+            return cached
     res = requests.get(ol_trending_url.format(time=time, limit=limit, page=page))
     res = res.json()
     trending = []
@@ -57,21 +59,24 @@ def get_trending(time="daily", limit=10, page=1):
             author_obj['author_url'] = ol_author_url.format(author_id=author_obj['author_id'])
             author_obj['name'] = name
             authors.append(author_obj)
-        cover_id = book['cover_i'] if 'cover_i' in book else book['covers'][0] if 'covers' in book else book['cover_id'] if 'cover_id' in book else None
+        cover_id = book['cover_i'] if 'cover_i' in book else book['covers'][0] if 'covers' in book else book[
+            'cover_id'] if 'cover_id' in book else None
         book_obj['title'] = book['title']
         book_obj['book_id'] = book['key'].split("/")[-1]
         book_obj['cover_id'] = cover_id
         book_obj['authors'] = authors
         trending.append(book_obj)
-    cache.set(cache_key, trending, 60 * 60 * 24)
-    return {"count": len(trending), "results": trending}
+
+    out = {"limit": limit, "page": page, "results": trending}
+    cache.set(cache_key, out, 60 * 60 * 48)
+    return out
 
 
 def get_subject(subject, limit=10, offset=0):
     if not subject:
-        raise ValidationError("Subject is required")
-    if limit > 100:
-        raise ValidationError("Limit cannot be greater than 100")
+        raise ValidationError({"code": "invalid_subject", "message": "Subject cannot be empty"})
+    if limit > 100 or limit < 0:
+        raise ValidationError({"code": "invalid_limit", "message": "Limit cannot be greater than 100 or less than 0"})
     if offset < 0:
         offset = 0
 
@@ -106,8 +111,9 @@ def get_subject(subject, limit=10, offset=0):
         book_obj['authors'] = authors
         books.append(book_obj)
 
-    out = {"count": res['work_count'] if 'work_count' in res else None, "results": books, "offset": offset}
-    cache.set(cache_key, out)
+    out = {"count": res['work_count'] if 'work_count' in res else limit, "results": books, "offset": offset}
+    cache.set(cache_key, out, 60 * 60 * 48
+              )
     return out
 
 
@@ -154,7 +160,7 @@ def create_authors(parsed_authors: list):
 
 def get_book(book_id: str):
     if not book_id:
-        raise ValidationError("Book ID is required")
+        raise ValidationError({"code": "invalid_book_id", "message": "Book ID cannot be empty"})
 
     cache_key = "res_book_{}".format(book_id)
     cached = cache.get(cache_key)
@@ -162,10 +168,10 @@ def get_book(book_id: str):
         book_data = cached
     else:
         res = requests.get(ol_book_url.format(book_id=book_id))
-        if not res.ok:
-            raise ValidationError("Book not found in Open Library")
+        if not res.ok or res.status_code != 200 or "authors" in res.url:
+            raise ValidationError({"code": "invalid_book_id", "message": "Invalid book ID"})
         book_data = res.json()
-        cache.set(cache_key, book_data, 60 * 60 * 24)
+        cache.set(cache_key, book_data, 60 * 60 * 48)
 
     authors = get_authors(book_data['authors']) if 'authors' in book_data else []
     date_params = ['publish_date', 'first_publish_year', 'publish_year', 'first_publish_date']
@@ -180,6 +186,15 @@ def get_book(book_id: str):
     if description is not None and "value" in description:
         description = description['value']
 
+    book_ol_rating = None
+    try:
+        book_ol_rating = Rating.objects.get(book_id__exact=book_id)
+    except Rating.DoesNotExist:
+        pass
+
+    if book_ol_rating:
+        book_ol_rating = book_ol_rating.rating * 2
+
     book = {
         "book_id": book_data['key'].split("/")[-1],
         "title": book_data['title'],
@@ -188,14 +203,14 @@ def get_book(book_id: str):
         "cover_id": book_data['covers'][0] if 'covers' in book_data else None,
         "subjects": book_data['subjects'] if 'subjects' in book_data else None,
         "authors": authors,
+        "book_ol_rating": book_ol_rating,
     }
-    print(book)
     return book
 
 
 def create_book(book_id: str):
     if Book.objects.filter(book_id=book_id).exists():
-        raise ValidationError("Book already exists")
+        return
 
     cache_key = "res_book_{}".format(book_id)
     cached = cache.get(cache_key)
@@ -203,10 +218,10 @@ def create_book(book_id: str):
         book_data = cached
     else:
         res = requests.get(ol_book_url.format(book_id=book_id))
-        if not res.ok:
-            raise ValidationError("Book not found in Open Library")
+        if not res.ok or res.status_code != 200 or "authors" in res.url:
+            raise ValidationError({"code": "invalid_book_id", "message": "Invalid book ID"})
         book_data = res.json()
-        cache.set(cache_key, book_data, 60 * 60 * 24)
+        cache.set(cache_key, book_data, 60 * 60 * 48)
 
     authors = get_authors(book_data['authors']) if 'authors' in book_data else []
     create_authors(authors)
@@ -222,6 +237,15 @@ def create_book(book_id: str):
     if description is not None and "value" in description:
         description = description['value']
 
+    book_ol_rating = None
+    try:
+        book_ol_rating = Rating.objects.get(book_id__exact=book_id)
+    except Rating.DoesNotExist:
+        pass
+
+    if book_ol_rating:
+        book_ol_rating = book_ol_rating.rating * 2.0
+
     book = Book(
         book_id=book_data['key'].split("/")[-1],
         title=book_data['title'],
@@ -229,9 +253,67 @@ def create_book(book_id: str):
         description=description,
         cover_id=book_data['covers'][0] if 'covers' in book_data else None,
         subjects=book_data['subjects'] if 'subjects' in book_data else None,
+        book_ol_rating=book_ol_rating,
     )
     book.save()
 
     for author in authors:
         book.author.add(Author.objects.get(author_id=author['author_id']))
     return book
+
+
+def get_search(query, limit=10, offset=0):
+    if not query or query == "":
+        raise ValidationError({"code": "invalid_query", "message": "Query cannot be empty"})
+    if limit > 100:
+        raise ValidationError({"code": "invalid_limit", "message": "Limit cannot be greater than 100"})
+    if limit < 0 or limit == 0 or limit is None:
+        limit = 10
+    if offset < 0 or offset is None:
+        offset = 0
+
+    query = query.strip()
+
+    query = query.replace(" ", "+")
+
+    cache_key = "res_search_{}_{}".format(query, offset)
+    cached = cache.get(cache_key)
+
+    if cached:
+        if cached['limit'] >= limit:
+            res = cached['results']
+            res = res[:limit]
+            cached['results'] = res
+            return cached
+
+    res = requests.get(ol_search_url.format(q=query, limit=limit, offset=offset))
+    res = res.json()
+    book_data = {}
+
+    book_data['count'] = res['numFound'] if 'numFound' in res else None
+    book_data['limit'] = limit
+    book_data['offset'] = res['start'] if 'start' in res else offset
+    book_data['query'] = query
+
+    docs = res['docs'] if 'docs' in res else []
+    books = []
+
+    for doc in docs:
+        author_names = []
+        for author in doc['author_name'] if 'author_name' in doc else []:
+            author_names.append({"name": author})
+        book_obj = {
+            "book_id": doc['key'].split("/")[-1],
+            "title": doc['title'] if 'title' in doc else None,
+            "publish_date": doc['first_publish_year'] if 'first_publish_year' in doc else None,
+            "cover_id": doc['cover_i'] if 'cover_i' in doc else None,
+            "authors": author_names,
+        }
+
+        books.append(book_obj)
+
+    book_data["results"] = books
+
+    # 10 minutes cache
+    cache.set(cache_key, book_data, 60 * 5)
+    return book_data

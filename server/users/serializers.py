@@ -22,10 +22,14 @@ class UserLoginSerializer(TokenObtainPairSerializer):
         if user and user.is_active:
             return {
                 'username': user.username,
+                'profile_pic': user.profile_pic.url if user.profile_pic else None,
                 'access': str(RefreshToken.for_user(user).access_token),
                 'refresh': str(RefreshToken.for_user(user))
             }
-        raise serializers.ValidationError("Incorrect Credentials")
+        raise serializers.ValidationError({
+            'code': 'authorization_failed',
+            'message': 'Invalid credentials'
+        })
 
 
 class UserRegisterSerializer(serializers.Serializer):
@@ -42,13 +46,13 @@ class UserRegisterSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if User.objects.filter(email=attrs['email']).exists():
-            raise serializers.ValidationError("Email already exists")
+            raise serializers.ValidationError({"code": "email_exists", "message": "Email already exists", "field": "email"})
         if User.objects.filter(username=attrs['username']).exists():
-            raise serializers.ValidationError("Username already exists")
+            raise serializers.ValidationError({"code": "username_exists", "message": "Username already exists", "field": "username"})
         try:
             validate_password(attrs['password'])
         except Exception as e:
-            raise serializers.ValidationError(str(e))
+            raise serializers.ValidationError({"code": "invalid_password", "message": str(e)})
 
         return attrs
 
@@ -74,8 +78,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ['password', 'is_superuser', 'is_staff', 'is_active', 'groups', 'user_permissions', 'last_login',
-                   'date_joined', 'email']
-        read_only_fields = ['id', 'total_reviews', 'book_status_count']
+                   'date_joined']
+        read_only_fields = ['id', 'total_reviews', 'book_status_count', 'username']
 
     def get_total_reviews(self, obj):
         return Review.objects.filter(user=obj).count()
@@ -92,3 +96,12 @@ class UserSerializer(serializers.ModelSerializer):
         total = out['completed'] + out['reading'] + out['planning'] + out['dropped'] + out['paused']
         out['total'] = total
         return out
+
+
+class UserUnAuthSerializer(UserSerializer):
+    class Meta:
+        model = User
+        exclude = ['password', 'is_superuser', 'is_staff', 'is_active', 'groups', 'user_permissions', 'last_login',
+                   'date_joined', 'email']
+
+

@@ -7,7 +7,7 @@ urlpatterns = [
     path('login/', UserLoginView.as_view()),
     path('refresh/', RefreshTokenView.as_view()),
     path('logout/', UserLogoutView.as_view()),
-    path('is-authenticated/', is_authenticated.as_view(), name='is-authenticated'),
+    path('is_authenticated/', is_authenticated.as_view(), name='is-authenticated'),
 
     path('users/', UserView.as_view()),
     path('users/<str:username>/', UserDetailView.as_view()),

@@ -52,11 +52,14 @@ class UserView(generics.ListAPIView):
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     authentication_classes = [JWTAuthentication]
     serializer_class = UserSerializer
     lookup_field = 'username'
     queryset = User.objects.all()
+
+    def put(self, *args, **kwargs):
+        return self.partial_update(*args, **kwargs)
 
 
 # TODO: remove is_authenticated
@@ -64,11 +67,14 @@ from django.shortcuts import HttpResponse
 
 
 class is_authenticated(generics.GenericAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.AllowAny,)
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        return HttpResponse('Authenticated')
+        if request.user.is_authenticated:
+            return Response({'is_authenticated': True}, status=status.HTTP_200_OK)
+        else:
+            return Response({'is_authenticated': False}, status=status.HTTP_200_OK)
 
 
 # TODO: Implement logout

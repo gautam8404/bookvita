@@ -1,3 +1,4 @@
+import rest_framework.exceptions
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,7 +15,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class BookShelveALLView(generics.ListAPIView):
-    permissions_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     authentication_classes = [JWTAuthentication]
     serializer_class = BookShelveSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -25,8 +26,8 @@ class BookShelveALLView(generics.ListAPIView):
 
 
 class BookShelveUserView(generics.ListCreateAPIView):
-    permissions_classes = (permissions.IsAuthenticatedOrReadOnly,)
     authentication_classes = [JWTAuthentication]
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     serializer_class = BookShelveSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name']
@@ -34,23 +35,23 @@ class BookShelveUserView(generics.ListCreateAPIView):
     http_method_names = ['get', 'post']
 
     def get_queryset(self):
-        user = User.objects.get(username=self.kwargs.get('username'))
+        user = get_object_or_404(User, username=self.kwargs.get('username'))
         return BookShelves.objects.filter(user=user)
 
     def perform_create(self, serializer):
+        print(self.request.user.is_authenticated)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=self.request.user)
+        user = User.objects.get(username=self.kwargs.get('username'))
         serializer.save(user=user)
 
     def get_serializer_class(self):
-        # details in book params
         if self.request.query_params.get('details', None) == 'true':
             return BookShelveDetailSerializer
         return BookShelveSerializer
 
 
 class BookShelveDetailsView(generics.RetrieveUpdateDestroyAPIView):
-    permissions_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     authentication_classes = [JWTAuthentication]
     serializer_class = BookShelveDetailSerializer
     lookup_field = 'bookshelf_id'
@@ -85,7 +86,10 @@ class BookShelveModifyView(APIView):
         for book_id in book_ids:
             if not Book.objects.filter(book_id=book_id).exists():
                 from books.helpers import create_book
-                create_book(book_id)
+                try:
+                    create_book(book_id)
+                except:
+                    continue    # if book does not exist in olib, skip it
             book = get_object_or_404(Book, book_id=book_id)
             if not BookShelveBooks.objects.filter(book=book, book_shelve=bookshelf).exists():
                 BookShelveBooks.objects.create(book=book, book_shelve=bookshelf)
@@ -106,15 +110,28 @@ class BookShelveModifyView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class ToggleLikeView(APIView):
+class ToggleShelfLikeView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-    http_method_names = ['get']
+    http_method_names = ['post']
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         bookshelf = get_object_or_404(BookShelves, bookshelf_id=kwargs.get('bookshelf_id'))
         if not BookShelveLikes.objects.filter(book_shelve=bookshelf, user=request.user).exists():
             BookShelveLikes.objects.create(book_shelve=bookshelf, user=request.user)
         else:
             BookShelveLikes.objects.filter(book_shelve=bookshelf, user=request.user).delete()
         return Response(status=status.HTTP_200_OK)
+
+
+# returns list of bookshelves liked by user
+class BookShelveLikedView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    http_method_names = ['get']
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        bookshelves = BookShelves.objects.filter(book_shelve_likes__user=user)
+        serializer = BookShelveSerializer(bookshelves, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

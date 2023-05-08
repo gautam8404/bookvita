@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from books.models import Book
+import uuid
 
 
 # Create your models here.
@@ -24,7 +25,7 @@ class BookShelves(models.Model):
         db_table = 'book_shelve'
         ordering = ['name']
 
-    bookshelf_id = models.AutoField(primary_key=True)
+    bookshelf_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(max_length=2000, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="book_shelves")

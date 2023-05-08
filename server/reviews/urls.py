@@ -9,6 +9,7 @@ from .views import (
 urlpatterns = [
     path('reviews/', ReviewListView.as_view()),
     path('reviews/book/<str:book_id>/', ReviewCreateView.as_view()),
-    path('reviews/<int:review_id>/', ReviewRUDView.as_view(), name='review'),
-    path('reviews/<int:review_id>/like/', ToggleLikeView.as_view()),
+    path('reviews/<uuid:review_id>/', ReviewRUDView.as_view(), name='review'),
+    path('reviews/<uuid:review_id>/like/', ToggleLikeView.as_view()),
+
 ]
