@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto , afterNavigate} from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import InstantSearch from './InstantSearch.svelte';
 	import ProgressBar from 'svelte-progress-bar';
 	let progress: any;
@@ -18,7 +18,7 @@
 
 	const searchSubmit = async () => {
 		if (!text || text.length < 3) {
-			data = { results: []};
+			data = { results: [] };
 			return;
 		}
 		progress.start();
@@ -27,19 +27,23 @@
 		if (data_.results.length > 0) {
 			data = data_;
 		} else {
-			data = {results: [{
-				title: 'No results found',
-				authors: [
+			data = {
+				results: [
 					{
-						name: 'Try searching for something else',
-					},
-				],
-				publish_date: undefined,
-				cover_id: '',
-			}]}
+						title: 'No results found',
+						authors: [
+							{
+								name: 'Try searching for something else'
+							}
+						],
+						publish_date: undefined,
+						cover_id: ''
+					}
+				]
+			};
 		}
 		progress.complete();
-	}
+	};
 
 	function debounceSubmit() {
 		debounce(searchSubmit, 500);
@@ -64,7 +68,7 @@
 
 	afterNavigate(() => {
 		instantSearchVisible = false;
-	})
+	});
 </script>
 
 <svelte:window on:mousedown={clickOutside} />
@@ -103,5 +107,3 @@
 		</div>
 	</form>
 </div>
-
-

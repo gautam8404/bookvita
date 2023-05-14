@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 		}
 
 		const res = await fetch(
-			'http://localhost:8000/api/trending/' + sortby + '?limit=' + limit + '&page=' + page
+			'/api/trending/' + sortby + '?limit=' + limit + '&page=' + page
 		);
 		const data = await res.json();
 
@@ -25,10 +25,10 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 	}
 	const offset = (parseInt(page) - 1) * limit;
 	const res = await fetch(
-		'http://127.0.0.1:8000/api/subject/' + subject + '?limit=' + limit + '&offset=' + offset
+		'/api/subject/' + subject + '?limit=' + limit + '&offset=' + offset
 	);
 	console.log(
-		'http://127.0.0.1:8000/api/subject/' + subject + '?limit=' + limit + '&offset=' + offset
+		'/api/subject/' + subject + '?limit=' + limit + '&offset=' + offset
 	);
 	const data = await res.json();
 

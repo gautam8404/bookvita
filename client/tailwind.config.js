@@ -9,8 +9,11 @@ export default {
 			},
 			fontFamily: {
 				body: ['Poppins', 'sans-serif']
-			},
+			}
 		}
 	},
-	plugins: [require('@tailwindcss/line-clamp'), ...(process.env.NODE_ENV === 'production' ? [require('cssnano')] : [])],
+	plugins: [
+		require('@tailwindcss/line-clamp'),
+		...(process.env.NODE_ENV === 'production' ? [require('cssnano')] : [])
+	]
 };

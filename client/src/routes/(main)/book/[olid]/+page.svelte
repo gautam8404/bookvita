@@ -1,14 +1,8 @@
 <script lang="ts">
-    import type { PageData } from './$types';
-    import {page} from '$app/stores';
+	import type { PageServerData } from './$types';
 
-    let {olid} = $page.params;
-    
-    export let data: PageData;
+	import BookInfoPage from '$lib/components/BookInfoPage.svelte';
+	export let data: PageServerData;
+</script>
 
-    let conf = process.env.NODE_ENV;
-</script> 
-
-
-{conf}
-
+<BookInfoPage {data} />

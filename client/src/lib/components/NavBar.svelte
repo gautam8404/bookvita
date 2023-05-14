@@ -11,9 +11,11 @@
 			</h1>
 		</div>
 
-		<SearchBar/>
+		<SearchBar />
 
-		<div class="pfp flex justify-end items-end mr-10 flex-shrink border border-black dark:border-white">
+		<div
+			class="pfp flex justify-end items-end mr-10 flex-shrink border border-black dark:border-white"
+		>
 			<input
 				type="image"
 				src={'https://i.imgur.com/2d4kZ9h.png'}

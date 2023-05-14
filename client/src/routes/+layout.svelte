@@ -1,8 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-
-	import { navigating } from '$app/stores';
-	import ProgressBar from 'svelte-progress-bar';
+    import {Toaster} from "svelte-french-toast";
+    import ProgressBar from 'svelte-progress-bar';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 
 	let progress: any;
@@ -16,6 +15,7 @@
 	});
 </script>
 
+<Toaster />
 <ProgressBar color="#ff0000" width="5px" bind:this={progress} />
 
 <slot />
