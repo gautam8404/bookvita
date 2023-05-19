@@ -13,4 +13,6 @@ A book tracking web app written in django and svelte
 
 # setup
 
-Right now bookvita does not have a conveinient way to set it up, it involves installing or using remote redis and postgresql databases etc, once frontend is completed i'll add a docker-compose for easy setup
+```
+docker-compose up
+```
