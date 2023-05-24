@@ -16,3 +16,8 @@ A book tracking web app written in django and svelte
 ```
 docker-compose up
 ```
+
+# ScreenShots
+
+![image](https://github.com/gautam8404/bookvita/assets/93448885/9a47327c-4f11-4934-aa36-c108f3ebf212)
+
