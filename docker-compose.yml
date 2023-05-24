@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   redis:
@@ -11,6 +11,11 @@ services:
     container_name: redis
     networks:
       - database
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   postgres:
     image: postgres
@@ -25,6 +30,11 @@ services:
       - ./postgres/data:/var/lib/postgresql/data
     networks:
       - database
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   server:
     build: ./server/
@@ -32,8 +42,11 @@ services:
       - database
       - web
     depends_on:
-        - postgres
-        - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint: /entrypoint.sh
     environment:
         DB_HOST: postgres
         DB_USER: postgres
@@ -43,6 +56,7 @@ services:
         REDIS_URL: redis://redis:6379
         DJANGO_SETTINGS_MODULE: server.settings_prod
         ALLOWED_HOSTS: 'server'
+    restart: always
 
   client:
     build: ./client/

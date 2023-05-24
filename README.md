@@ -14,7 +14,7 @@ A book tracking web app written in django and svelte
 # setup
 
 ```
-docker-compose up
+docker-compose up --build
 ```
 
 # ScreenShots
