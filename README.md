@@ -21,3 +21,5 @@ docker-compose up --build
 
 ![image](https://github.com/gautam8404/bookvita/assets/93448885/9a47327c-4f11-4934-aa36-c108f3ebf212)
 
+#### Design by [Mojahidul](https://www.linkedin.com/in/mojahidul-islam03/)
+---
